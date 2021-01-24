@@ -1,0 +1,23 @@
+*,
+*::after,
+*::before {
+  box-sizing: border-box;
+  margin: 0px;
+  padding: 0px;
+}
+#main-board {
+  margin: 100px 50px 50px 300px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 200px;
+  height: 400px;
+}
+.square {
+  width: 25px;
+  height: 25px;
+  border: solid 1px black;
+  border-collapse: collapse;
+  box-sizing: border-box;
+  float: left;
+}
