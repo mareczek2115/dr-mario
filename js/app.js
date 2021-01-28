@@ -31,7 +31,7 @@ const COLORS = ['blue', 'yellow', 'red'];
   }
   SQUARES.push(ROW)
 })();
-console.log(SQUARES)
+// console.log(SQUARES)
 //--------------------------------------
 
 //----------------ROBAKI----------------
@@ -46,12 +46,16 @@ for(let i = 0; i<4; i++){
 //----------------KLOCKI----------------
 let pill = undefined;
 const interval = setInterval(() => {
-  if(PILLS.length === 0 || PILLS[PILLS.length-1].state === 'static'){
+  if((PILLS.length === 0 || PILLS[PILLS.length-1].state === 'static') && !SQUARES[1][4].isOccupied && !SQUARES[1][5].isOccupied){
     const color_1 = Math.round(Math.random() * 2)
     const color_2 = Math.round(Math.random() * 2)
     pill = new Pill(COLORS[color_1], COLORS[color_2], 'falling', 'horizontal', 1, [4,5])
     PILLS.push(pill)
     pill.generatePill()
+  }
+  else if(PILLS.length !== 0 && PILLS[PILLS.length-1].state === 'static' && (SQUARES[1][4].isOccupied || SQUARES[1][5].isOccupied)){
+    clearInterval(interval)
+    alert('bruh, nie można wygenerować kolejnych tabletek')
   }
 }, 1000)
 window.onkeydown = e => {
@@ -60,4 +64,4 @@ window.onkeydown = e => {
 }
 //--------------------------------------
 
-export { SQUARES, BUGS, PILLS }
+export { SQUARES, BUGS, PILLS, interval }
