@@ -4,10 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dr. Mario</title>
+    <link rel="shortcut icon" href="./img/icon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="./css/style.css" />
     <script type="module" src="./js/app.js" defer></script>
   </head>
   <body>
-    <div id="main-board"></div>
+    <div id="game">
+      <p id="top-score"></p>
+      <p id="score"></p>
+      <img src="./img/lupa/yl/2.png" class="virus" alt="" id="yellow-virus" />
+      <img src="./img/lupa/bl/2.png" class="virus" alt="" id="blue-virus" />
+      <img src="./img/lupa/br/2.png" class="virus" alt="" id="brown-virus" />
+      <img src="./img/pf.png" alt="" id="background-board" />
+      <img src="" alt="" id="alert" />
+      <div id="throw-squares-board"></div>
+      <div id="squares-board"></div>
+      <img src="./img/go_dr.png" alt="" id="game-over-doctor" />
+      <p id="viruses"></p>
+    </div>
   </body>
 </html>

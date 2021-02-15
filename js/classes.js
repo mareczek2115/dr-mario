@@ -1,63 +1,145 @@
-'use strict';
-import { SQUARES, BUGS, PILLS, interval } from './app.js ';
-const MAIN_BOARD = document.getElementById('main-board');
+"use strict";
+import { SQUARES, BUGS, PILLS, THROW_SQUARES, COLORS, interval, updateVirusesCount, flag, keyCode } from './app.js ';
+
+const SCORE_BOARD = document.getElementById('score');
+
+let topScore = localStorage.getItem('topScore')
+if(!topScore) topScore = 0
+
+let score = 0;
+let throwingPill = true
+
+//
+function updateScore(){
+  for(let i = 0; i<7; i++){
+    const score_img = document.createElement('img');
+    if(i === 4) score_img.src = `../img/cyfry/${score/100}.png`;
+    else score_img.src = '../img/cyfry/0.png';
+    score_img.classList.add('digit');
+    SCORE_BOARD.appendChild(score_img);
+  }
+};
+updateScore()
 
 //
 class Square {
-  constructor(id, isOccupied, typeOfEntity, color) {
+  constructor(id, isOccupied, typeOfEntity, color, className) {
     this.id = id;
     this.isOccupied = isOccupied;
     this.typeOfEntity = typeOfEntity;
     this.color = color
+    this.pillId = undefined
+    this.className = className
   }
-  generateSquare = () => {
+  generateSquare = MAIN_BOARD => {
     const SQUARE = document.createElement('div');
     SQUARE.id = this.id;
-    SQUARE.classList.add('square');
+    SQUARE.classList.add(this.className);
     MAIN_BOARD.appendChild(SQUARE);
   };
 }
 
 //
 class Pill {
-  constructor(color_1, color_2, state, position, currentRow, currentColumn) {
+  constructor(color_1, color_2, state, position, currentRow, currentColumn, id) {
     this.color_1 = color_1;
     this.color_2 = color_2;
     this.state = state;
     this.position = position;
     this.currentRow = currentRow;
     this.currentColumn = currentColumn;
-    this.canMove = true;
+    this.canMove = false;
     this.changeColor = false
-  }
-  generatePill = () => {
+    this.id = id
+  };
+  throwPill = () => {
+    this.canMove = true
+    let count = 0
+    this.colorizeHorizontalPill('fallDown', false, false, THROW_SQUARES);
+    document.getElementById('-60').innerHTML = `<img src="../img/hands/up_1.png" class="hand" />`
+    document.getElementById('-72').innerHTML = `<img src="../img/hands/up_2.png" class="hand" />`
+    document.getElementById('-84').innerHTML = `<img src="../img/hands/up_3.png" class="hand" />`
+    const throw_pill_interval = setInterval(() => {
+      if(count === 23){
+        document.getElementById('-96').innerHTML = ''
+        document.getElementById('-60').innerHTML = `<img src="../img/hands/up_1.png" class="hand" />`
+        document.getElementById('-72').innerHTML = `<img src="../img/hands/up_2.png" class="hand" />`
+        document.getElementById('-84').innerHTML = `<img src="../img/hands/up_3.png" class="hand" />`
+        let colorNumeroUno = COLORS[Math.round(Math.random() * 2)]
+        let colorNumeroDuo = COLORS[Math.round(Math.random() * 2)]
+        document.getElementById('-47').dataset.color_1 = colorNumeroUno
+        document.getElementById('-48').dataset.color_2 = colorNumeroDuo
+        document.getElementById('-47').innerHTML = `<img src="../img/${colorNumeroUno.substr(0,2)}_left.png" />`
+        document.getElementById('-48').innerHTML = `<img src="../img/${colorNumeroDuo.substr(0,2)}_right.png" />`
+        clearInterval(throw_pill_interval);
+        this.changeBoard()
+        throwingPill = false
+      }
+      if(count === 0 || count === 2 || count === 4 || count === 6 || count === 8 || count === 10 || count === 12 || count === 14 || count === 16 || count === 18) this.rotate('ArrowUp', false, THROW_SQUARES);
+      else if(count === 1 || count === 3 || count === 5 || count === 7 || count === 9 || count === 11 || count === 13 || count === 15 || count === 17 || count === 19) this.rotate('ArrowUp', true, THROW_SQUARES);
+      if(count === 1 || count === 3) this.colorizeHorizontalPill('moveUpward', false, true, THROW_SQUARES);
+      else if(count === 17 || count === 20 || count === 21 || count === 22) this.colorizeHorizontalPill('fallDown', false, true, THROW_SQUARES);
+      if(count === 3){
+        document.getElementById('-60').innerHTML = ''
+        document.getElementById('-71').innerHTML = `<img src="../img/hands/middle_11.png" class="hand" />`
+        document.getElementById('-72').innerHTML = `<img src="../img/hands/middle_12.png" class="hand" />`
+        document.getElementById('-83').innerHTML = `<img src="../img/hands/middle_21.png" class="hand" />`
+        document.getElementById('-84').innerHTML = `<img src="../img/hands/middle_22.png" class="hand" />`
+      }
+      if(count === 6){
+        document.getElementById('-71').innerHTML = ''
+        document.getElementById('-72').innerHTML = ''
+        document.getElementById('-83').innerHTML = ''
+        document.getElementById('-84').innerHTML = `<img src="../img/hands/down_1.png" class="hand" />`
+        document.getElementById('-96').innerHTML = `<img src="../img/hands/down_2.png" class="hand" />`
+      }
+      count++;
+    }, 20)
+  };
+  changeBoard = () => {
+    this.currentRow = 1
+    this.currentColumn = [4, 5]
     setTimeout(() => {
       if(!SQUARES[this.currentRow][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow][this.currentColumn[1]].isOccupied){
-        this.colorizeHorizontalPill('generatePill');
+        this.colorizeHorizontalPill('generatePill', false, true, SQUARES);
+        document.getElementById('-61').removeChild(document.getElementById('-61').lastChild);
+        document.getElementById('-62').removeChild(document.getElementById('-62').lastChild);
+        THROW_SQUARES[6][1].isOccupied = false
+        THROW_SQUARES[6][1].typeOfEntity = null
+        THROW_SQUARES[6][1].color = undefined
+        THROW_SQUARES[6][1].pillId = undefined
+        THROW_SQUARES[6][2].isOccupied = false
+        THROW_SQUARES[6][2].typeOfEntity = null
+        THROW_SQUARES[6][2].color = undefined
+        THROW_SQUARES[6][2].pillId = undefined
+        this.canMove = true
         this.fallDown();
+        this.move_interval = setInterval(() => this.move(keyCode, SQUARES), 100)
       }
     }, 500)
-  }
+  };
   fallDown = () => {
       this.interval = setInterval(() => {
         if(this.position === 'horizontal' && !SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied)
-          this.colorizeHorizontalPill('fallDown');
+          this.colorizeHorizontalPill('fallDown', false, true, SQUARES);
         else if(this.position === 'vertical' && !SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied)
-          this.colorizeVerticalPill('fallDown');
+          this.colorizeVerticalPill('fallDown', false, true, SQUARES);
         else{
           clearInterval(this.interval);
           this.state = 'static';
           this.checkIfCanRemove()
         }
-      }, 1000)
+      }, 800)
   };
-  rotate = code => {
+  rotate = (code, throwingPill, SQUARES) => {
     if(this.state !== 'static' && this.currentRow !== 1){
       let wasPositionChanged = false
       if(this.position === 'horizontal' && !SQUARES[this.currentRow-1][this.currentColumn[0]].isOccupied && this.canMove){
-        document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).style.backgroundColor = 'white';
+        document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).removeChild(document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).lastChild)
         SQUARES[this.currentRow][this.currentColumn[1]].isOccupied = false;
         SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = null;
+        SQUARES[this.currentRow][this.currentColumn[1]].color = undefined;
+        SQUARES[this.currentRow][this.currentColumn[1]].pillId = undefined;
         this.currentRow = [this.currentRow, this.currentRow-1];
         this.currentColumn = this.currentColumn[0];
         if(code === 'ArrowUp' || code === 'KeyW'){
@@ -76,10 +158,12 @@ class Pill {
             }
         }
         wasPositionChanged = !wasPositionChanged
-      } else if(this.position === 'vertical' && !SQUARES[this.currentRow[0]][this.currentColumn+1].isOccupied && this.canMove){
-        document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).style.backgroundColor = 'white';
+      } else if(this.position === 'vertical' && !SQUARES[this.currentRow[0]][this.currentColumn+1].isOccupied && this.canMove && !throwingPill){
+        document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).removeChild(document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).lastChild)
         SQUARES[this.currentRow[1]][this.currentColumn].isOccupied = false;
         SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = null;
+        SQUARES[this.currentRow[1]][this.currentColumn].color = undefined;
+        SQUARES[this.currentRow[1]][this.currentColumn].pillId = undefined;
         this.currentRow = this.currentRow[0];
         this.currentColumn = [this.currentColumn, this.currentColumn + 1];
         if(code === 'ArrowUp' || code === 'KeyW'){
@@ -98,10 +182,12 @@ class Pill {
             }
         }
         wasPositionChanged = !wasPositionChanged
-      } else if(this.position === 'vertical' && SQUARES[this.currentRow[0]][this.currentColumn+1].isOccupied && !SQUARES[this.currentRow[0]][this.currentColumn-1].isOccupied && this.canMove && !wasPositionChanged){
-        document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).style.backgroundColor = 'white';
+      } else if(this.position === 'vertical' && SQUARES[this.currentRow[0]][this.currentColumn+1].isOccupied && !SQUARES[this.currentRow[0]][this.currentColumn-1].isOccupied && this.canMove && !wasPositionChanged || (!wasPositionChanged && throwingPill)){
+        document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).removeChild(document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).lastChild);
         SQUARES[this.currentRow[1]][this.currentColumn].isOccupied = false;
         SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = null;
+        SQUARES[this.currentRow[1]][this.currentColumn].color = undefined;
+        SQUARES[this.currentRow[1]][this.currentColumn].pillId = undefined;
         this.currentRow = this.currentRow[0];
         this.currentColumn = [this.currentColumn - 1, this.currentColumn];
         if(code === 'ArrowUp' || code === 'KeyW'){
@@ -122,118 +208,203 @@ class Pill {
         wasPositionChanged = !wasPositionChanged
       }
       if(wasPositionChanged) this.position === 'horizontal' ? this.position = 'vertical' : this.position = 'horizontal';
-      this.position === 'horizontal' ? this.colorizeHorizontalPill() : this.colorizeVerticalPill();
+      this.position === 'horizontal' ? this.colorizeHorizontalPill(undefined, false, true, SQUARES) : this.colorizeVerticalPill(undefined, false, true, SQUARES);
     }
   };
-  move = code => {
-    if(this.state != 'static'){
-      if(this.position === 'horizontal'){
-        if((code === 'ArrowLeft' || code === 'KeyA') && SQUARES[this.currentRow][this.currentColumn[0]-1].isOccupied === false && this.canMove)
-          this.colorizeHorizontalPill('moveLeft');
-        else if((code === 'ArrowRight' || code === 'KeyD') && SQUARES[this.currentRow][this.currentColumn[1]+1].isOccupied === false && this.canMove)
-          this.colorizeHorizontalPill('moveRight');
-        else if(code === 'ArrowDown' || code === 'KeyS'){
-          this.canMove = false;
-          clearInterval(this.interval);
-          this.interval = setInterval(() => {
-            if(SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied === false && SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied === false)
-              this.colorizeHorizontalPill('fallDown');
-            else{
-              clearInterval(this.interval);
-              this.state = 'static';
-              this.checkIfCanRemove()
-              this.canMove = true;
-            }
-          }, 50);
-        }
-      } else if(this.position === 'vertical'){
-        if((code === 'ArrowLeft' || code === 'KeyA') && SQUARES[this.currentRow[0]][this.currentColumn-1].isOccupied === false && SQUARES[this.currentRow[1]][this.currentColumn-1].isOccupied === false && this.canMove)
-          this.colorizeVerticalPill('moveLeft');
-        if((code === 'ArrowRight' || code === 'KeyD') && SQUARES[this.currentRow[0]][this.currentColumn+1].isOccupied === false && SQUARES[this.currentRow[1]][this.currentColumn+1].isOccupied === false && this.canMove){
-          this.colorizeVerticalPill('moveRight');
-        }
-
-        else if(code === 'ArrowDown' || code === 'KeyS'){
-          this.canMove = false;
-          clearInterval(this.interval);
-          this.interval = setInterval(() => {
-            if(SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied === false)
-              this.colorizeVerticalPill('fallDown');
-            else{
-              clearInterval(this.interval);
-              this.state = 'static';
-              this.checkIfCanRemove()
-              this.canMove = true;
-            };
-          }, 50);
+  move = (code, SQUARES) => {
+    if(flag){
+      if(this.state != 'static'){
+        if(this.position === 'horizontal'){
+          if((code === 'ArrowLeft' || code === 'KeyA') && !SQUARES[this.currentRow][this.currentColumn[0]-1].isOccupied && this.canMove)
+            this.colorizeHorizontalPill('moveLeft', false, true, SQUARES);
+          else if((code === 'ArrowRight' || code === 'KeyD') && !SQUARES[this.currentRow][this.currentColumn[1]+1].isOccupied && this.canMove)
+            this.colorizeHorizontalPill('moveRight', false, true, SQUARES);
+          else if((code === 'ArrowDown' || code === 'KeyS') && !SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+            this.canMove = false;
+            clearInterval(this.interval);
+            this.interval = setInterval(() => {
+              if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied) this.colorizeHorizontalPill('fallDown', false, true, SQUARES);
+              else {
+                clearInterval(this.interval)
+                this.checkIfCanRemove()
+                this.state = 'static'
+                this.canMove = true
+              }
+            }, 50)
+          }
+        } else if(this.position === 'vertical'){
+          if((code === 'ArrowLeft' || code === 'KeyA') && !SQUARES[this.currentRow[0]][this.currentColumn-1].isOccupied && !SQUARES[this.currentRow[1]][this.currentColumn-1].isOccupied && this.canMove)
+            this.colorizeVerticalPill('moveLeft', false, true, SQUARES);
+          if((code === 'ArrowRight' || code === 'KeyD') && !SQUARES[this.currentRow[0]][this.currentColumn+1].isOccupied && !SQUARES[this.currentRow[1]][this.currentColumn+1].isOccupied && this.canMove){
+            this.colorizeVerticalPill('moveRight', false, true, SQUARES);
+          } else if((code === 'ArrowDown' || code === 'KeyS') && !SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+            this.canMove = false;
+            clearInterval(this.interval);
+            this.interval = setInterval(() => {
+              if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied) this.colorizeVerticalPill('fallDown', false, true, SQUARES);
+              else {
+                clearInterval(this.interval)
+                this.checkIfCanRemove()
+                this.state = 'static'
+                this.canMove = true
+              }
+            }, 50)
+          }
         }
       }
     }
   };
-  colorizeHorizontalPill = source => {
+  colorizeHorizontalPill = (source, singleCube, useChangeSquaresInside, SQUARES) => {
+    let whiteBlock = undefined
+    if(singleCube){
+      if(!SQUARES[this.currentRow][this.currentColumn[0]].color || (SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity !== undefined && SQUARES[this.currentRow][this.currentColumn[0]].pillId !== this.id)) whiteBlock = 'left'
+      else if(!SQUARES[this.currentRow][this.currentColumn[1]].color || (SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity && SQUARES[this.currentRow][this.currentColumn[1]].pillId !== this.id)) whiteBlock = 'right'
+    }
     if(source !== 'generatePill'){
-      SQUARES[this.currentRow][this.currentColumn[0]].isOccupied = false;
-      SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity = null;
-      SQUARES[this.currentRow][this.currentColumn[0]].color = undefined;
-      SQUARES[this.currentRow][this.currentColumn[1]].isOccupied = false;
-      SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = null;
-      SQUARES[this.currentRow][this.currentColumn[1]].color = undefined;
-      document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).style.backgroundColor = `white`;
-      document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).style.backgroundColor = `white`;
+      if(whiteBlock !== 'left'){
+        SQUARES[this.currentRow][this.currentColumn[0]].isOccupied = false;
+        SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity = null;
+        SQUARES[this.currentRow][this.currentColumn[0]].color = undefined;
+        SQUARES[this.currentRow][this.currentColumn[0]].pillId = undefined;
+        const img = document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).lastChild
+        if(img) document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).removeChild(img);
+      }
+      if(whiteBlock !== 'right'){
+        SQUARES[this.currentRow][this.currentColumn[1]].isOccupied = false;
+        SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = null;
+        SQUARES[this.currentRow][this.currentColumn[1]].color = undefined;
+        SQUARES[this.currentRow][this.currentColumn[1]].pillId = undefined;
+        const img = document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).lastChild;
+        if(img) document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).removeChild(img);
+      }
+
     }
-    switch(source){
-      case 'fallDown':
-        this.currentRow += 1;
-        break;
-      case 'moveLeft':
-        this.currentColumn = [this.currentColumn[0]-1, this.currentColumn[1]-1];
-        break;
-      case 'moveRight':
-        this.currentColumn = [this.currentColumn[0]+1, this.currentColumn[1]+1];
-        break;
-      default:
-        break;
+    if(useChangeSquaresInside) this.changeSquares(source, 'horizontal');
+    if(whiteBlock === 'left'){
+      SQUARES[this.currentRow][this.currentColumn[1]].isOccupied = true;
+      SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = 'pill';
+      SQUARES[this.currentRow][this.currentColumn[1]].color = this.color_2;
+      SQUARES[this.currentRow][this.currentColumn[1]].pillId = this.id;
+      const img = document.createElement('img')
+      img.src = `../img/${this.color_2.substr(0,2)}_dot.png`;
+      document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).appendChild(img)
+    } else if(whiteBlock === 'right'){
+      SQUARES[this.currentRow][this.currentColumn[0]].isOccupied = true;
+      SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity = 'pill';
+      SQUARES[this.currentRow][this.currentColumn[0]].color = this.color_1;
+      SQUARES[this.currentRow][this.currentColumn[0]].pillId = this.id;
+      const img = document.createElement('img')
+      img.src = `../img/${this.color_1.substr(0,2)}_dot.png`;
+      document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).appendChild(img)
+    } else{
+      SQUARES[this.currentRow][this.currentColumn[0]].isOccupied = true;
+      SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity = 'pill';
+      SQUARES[this.currentRow][this.currentColumn[0]].color = this.color_1;
+      SQUARES[this.currentRow][this.currentColumn[0]].pillId = this.id;
+      SQUARES[this.currentRow][this.currentColumn[1]].isOccupied = true;
+      SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = 'pill';
+      SQUARES[this.currentRow][this.currentColumn[1]].color = this.color_2;
+      SQUARES[this.currentRow][this.currentColumn[1]].pillId = this.id;
+      const img_1 = document.createElement('img')
+      const img_2 = document.createElement('img')
+      img_1.src = `../img/${this.color_1.substr(0,2)}_left.png`;
+      img_2.src = `../img/${this.color_2.substr(0,2)}_right.png`;
+      document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).appendChild(img_1)
+      document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).appendChild(img_2)
     }
-    SQUARES[this.currentRow][this.currentColumn[0]].isOccupied = true;
-    SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity = 'pill';
-    SQUARES[this.currentRow][this.currentColumn[0]].color = this.color_1;
-    SQUARES[this.currentRow][this.currentColumn[1]].isOccupied = true;
-    SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = 'pill';
-    SQUARES[this.currentRow][this.currentColumn[1]].color = this.color_2;
-    document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).style.backgroundColor = `${this.color_1}`;
-    document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).style.backgroundColor = `${this.color_2}`;
+    PILLS.forEach(element => element.reactivatePill())
   };
-  colorizeVerticalPill = source => {
-    SQUARES[this.currentRow[0]][this.currentColumn].isOccupied = false;
-    SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity = null;
-    SQUARES[this.currentRow[0]][this.currentColumn].color = undefined;
+  colorizeVerticalPill = (source, singleCube, useChangeSquaresInside, SQUARES) => {
+    let whiteBlock = undefined
+    if(singleCube){
+      if(!SQUARES[this.currentRow[0]][this.currentColumn].color) whiteBlock = 'lower'
+      else if(!SQUARES[this.currentRow[1]][this.currentColumn].color) whiteBlock = 'upper'
+    }
+    if(whiteBlock !== 'lower'){
+      SQUARES[this.currentRow[0]][this.currentColumn].isOccupied = false;
+      SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity = null;
+      SQUARES[this.currentRow[0]][this.currentColumn].color = undefined;
+      SQUARES[this.currentRow[0]][this.currentColumn].pillId = undefined;
+      document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).removeChild(document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).lastChild);
+    }
     SQUARES[this.currentRow[1]][this.currentColumn].isOccupied = false;
     SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = null;
     SQUARES[this.currentRow[1]][this.currentColumn].color = undefined;
-    document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).style.backgroundColor = `white`;
-    document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).style.backgroundColor = `white`;
-    switch(source){
-      case 'fallDown':
-        this.currentRow = [this.currentRow[0]+1, this.currentRow[0]];
-        break;
-      case 'moveLeft':
-        this.currentColumn -= 1;
-        break;
-      case 'moveRight':
-        this.currentColumn += 1;
-        break;
-      default:
-        break;
+    SQUARES[this.currentRow[1]][this.currentColumn].pillId = undefined;
+    const img = document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).lastChild
+    if(img) document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).removeChild(img);
+    if(useChangeSquaresInside) this.changeSquares(source, 'vertical');
+    if(whiteBlock === 'lower'){
+      SQUARES[this.currentRow[1]][this.currentColumn].isOccupied = true;
+      SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = 'pill';
+      SQUARES[this.currentRow[1]][this.currentColumn].color = this.color_2;
+      SQUARES[this.currentRow[1]][this.currentColumn].pillId = this.id;
+      const img = document.createElement('img');
+      img.src = `../img/${this.color_2.substr(0,2)}_dot.png`;
+      document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).appendChild(img);
+    } else if(whiteBlock === 'upper'){
+      SQUARES[this.currentRow[0]][this.currentColumn].isOccupied = true;
+      SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity = 'pill';
+      SQUARES[this.currentRow[0]][this.currentColumn].color = this.color_1;
+      SQUARES[this.currentRow[0]][this.currentColumn].pillId = this.id;
+      const img = document.createElement('img');
+      img.src = `../img/${this.color_1.substr(0,2)}_dot.png`;
+      document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).appendChild(img);
+    } else {
+      SQUARES[this.currentRow[0]][this.currentColumn].isOccupied = true;
+      SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity = 'pill';
+      SQUARES[this.currentRow[0]][this.currentColumn].color = this.color_1;
+      SQUARES[this.currentRow[0]][this.currentColumn].pillId = this.id;
+      SQUARES[this.currentRow[1]][this.currentColumn].isOccupied = true;
+      SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = 'pill';
+      SQUARES[this.currentRow[1]][this.currentColumn].color = this.color_2;
+      SQUARES[this.currentRow[1]][this.currentColumn].pillId = this.id;
+      const img_1 = document.createElement('img');
+      const img_2 = document.createElement('img');
+      img_1.src = `../img/${this.color_1.substr(0,2)}_down.png`;
+      img_2.src = `../img/${this.color_2.substr(0,2)}_up.png`;
+      document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).appendChild(img_1);
+      document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).appendChild(img_2);
     }
-    SQUARES[this.currentRow[0]][this.currentColumn].isOccupied = true;
-    SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity = 'pill';
-    SQUARES[this.currentRow[0]][this.currentColumn].color = this.color_1;
-    SQUARES[this.currentRow[1]][this.currentColumn].isOccupied = true;
-    SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = 'pill';
-    SQUARES[this.currentRow[1]][this.currentColumn].color = this.color_2;
-    document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).style.backgroundColor = `${this.color_1}`;
-    document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).style.backgroundColor = `${this.color_2}`;
+    PILLS.forEach(element => element.reactivatePill())
   };
+  changeSquares = (source, position) => {
+    if(position === 'horizontal'){
+      switch(source){
+        case 'fallDown':
+          this.currentRow += 1;
+          break;
+        case 'moveLeft':
+          this.currentColumn = [this.currentColumn[0]-1, this.currentColumn[1]-1];
+          break;
+        case 'moveRight':
+          this.currentColumn = [this.currentColumn[0]+1, this.currentColumn[1]+1];
+          break;
+        case 'moveUpward':
+          this.currentRow -= 1;
+          break;
+        default:
+          break;
+      }
+    } else{
+      switch(source){
+        case 'fallDown':
+          this.currentRow = [this.currentRow[0]+1, this.currentRow[0]];
+          break;
+        case 'moveLeft':
+          this.currentColumn -= 1;
+          break;
+        case 'moveRight':
+          this.currentColumn += 1;
+          break;
+        case 'moveUpward':
+          this.currentRow = [this.currentRow[1], this.currentRow[1]-1];
+          break;
+        default:
+          break;
+      }
+    }
+  }
   checkIfCanRemove = () => {
     const idOfSquaresToClear = {
       horizontally: [],
@@ -262,52 +433,204 @@ class Pill {
         idOfSquaresToClear.horizontally.push(...compareColors([...this.currentRow], this.currentColumn, 1, [...this.currentRow], 'left', true, 0, this.color_2, 'vertical'))
       }
     }
-    idOfSquaresToClear.horizontally.sort((a,b) => a.id - b.id)
-    idOfSquaresToClear.vertically.sort((a,b) => a.id - b.id)
+    idOfSquaresToClear.horizontally.sort((a,b) => a.id - b.id);
+    idOfSquaresToClear.vertically.sort((a,b) => a.id - b.id);
     idOfSquaresToClear.horizontally.forEach((element, index) => {
       if(idOfSquaresToClear.horizontally[index+1]){
-        if(element.id === idOfSquaresToClear.horizontally[index+1].id) idOfSquaresToClear.horizontally.splice(index+1, 1)
+        if(element.id === idOfSquaresToClear.horizontally[index+1].id) idOfSquaresToClear.horizontally.splice(index+1, 1);
       }
     })
     idOfSquaresToClear.vertically.forEach((element, index) => {
       if(idOfSquaresToClear.vertically[index+1]){
-        if(element.id === idOfSquaresToClear.vertically[index+1].id) idOfSquaresToClear.vertically.splice(index+1, 1)
+        if(element.id === idOfSquaresToClear.vertically[index+1].id) idOfSquaresToClear.vertically.splice(index+1, 1);
       }
     })
     idOfSquaresToClear.horizontally.forEach(element => {
       if(SQUARES[element.row][element.column].typeOfEntity === 'bug'){
         BUGS.forEach((bug, index) => {
-          if(bug.id === element.id) BUGS.splice(index, 1)
+          if(bug.id === element.id){
+            BUGS.splice(index, 1);
+            score = score + 100;
+            SCORE_BOARD.innerText = '';
+            if(!BUGS.some(e => e.color === 'yellow')) document.getElementById('yellow-virus').style.display = 'none';
+            if(!BUGS.some(e => e.color === 'blue')) document.getElementById('blue-virus').style.display = 'none';
+            if(!BUGS.some(e => e.color === 'brown')) document.getElementById('brown-virus').style.display = 'none';
+            updateScore();
+            updateVirusesCount();
+          }
         })
       }
-      document.getElementById(`${element.id}`).style.backgroundColor = 'white'
-      SQUARES[element.row][element.column].isOccupied = false
-      SQUARES[element.row][element.column].typeOfEntity = null
-      SQUARES[element.row][element.column].color = undefined
+      const child = document.getElementById(`${element.id}`).lastChild;
+      if(child) child.src.split('/')[child.src.split('/').length-1].substr(0,5) === 'covid' ? child.src = `../img/${child.src.split('/')[child.src.split('/').length-1].split('_')[1].split('.')[0].substr(0,2)}_x.png` : child.src = `../img/${child.src.split('/')[child.src.split('/').length-1].split('_')[0]}_o.png`;
+      SQUARES[element.row][element.column].isOccupied = false;
+      SQUARES[element.row][element.column].typeOfEntity = null;
+      SQUARES[element.row][element.column].color = undefined;
+      SQUARES[element.row][element.column].pillId = undefined;
     })
     idOfSquaresToClear.vertically.forEach(element => {
       if(SQUARES[element.row][element.column].typeOfEntity === 'bug'){
         BUGS.forEach((bug, index) => {
-          if(bug.id === element.id) BUGS.splice(index, 1)
+          if(bug.id === element.id){
+            BUGS.splice(index, 1);
+            score = score + 100;
+            SCORE_BOARD.innerText = '';
+            if(!BUGS.some(e => e.color === 'yellow')) document.getElementById('yellow-virus').style.display = 'none';
+            if(!BUGS.some(e => e.color === 'blue')) document.getElementById('blue-virus').style.display = 'none';
+            if(!BUGS.some(e => e.color === 'brown')) document.getElementById('brown-virus').style.display = 'none';
+            updateScore();
+            updateVirusesCount();
+          }
         })
       }
-      document.getElementById(`${element.id}`).style.backgroundColor = 'white'
-      SQUARES[element.row][element.column].isOccupied = false
-      SQUARES[element.row][element.column].typeOfEntity = null
-      SQUARES[element.row][element.column].color = undefined
+      const child = document.getElementById(`${element.id}`).lastChild;
+      if(child) child.src.split('/')[child.src.split('/').length-1].substr(0,5) === 'covid' ? child.src = `../img/${child.src.split('/')[child.src.split('/').length-1].split('_')[1].split('.')[0].substr(0,2)}_x.png` : child.src = `../img/${child.src.split('/')[child.src.split('/').length-1].split('_')[0]}_o.png`;
+      SQUARES[element.row][element.column].isOccupied = false;
+      SQUARES[element.row][element.column].typeOfEntity = null;
+      SQUARES[element.row][element.column].color = undefined;
+      SQUARES[element.row][element.column].pillId = undefined;
+    });
+    PILLS.forEach((element, index) => {
+      if(element.position === 'horizontal'){
+        if(!SQUARES[element.currentRow][element.currentColumn[0]].isOccupied && !SQUARES[element.currentRow][element.currentColumn[1]].isOccupied) PILLS.splice(index, 1)
+      } else if(element.position === 'vertical'){
+        if(!SQUARES[element.currentRow[0]][element.currentColumn].isOccupied && !SQUARES[element.currentRow[1]][element.currentColumn].isOccupied) PILLS.splice(index, 1)
+      }
     })
+    PILLS.forEach(element => {
+      if(element.position === 'horizontal' && (SQUARES[element.currentRow][element.currentColumn[0]].isOccupied || SQUARES[element.currentRow][element.currentColumn[1]].isOccupied)){
+        if(!SQUARES[element.currentRow][element.currentColumn[0]].color){
+          document.getElementById(`${SQUARES[element.currentRow][element.currentColumn[1]].id}`).lastChild.src = `../img/${element.color_2.substr(0,2)}_dot.png`;
+        } else if(!SQUARES[element.currentRow][element.currentColumn[1]].color){
+          document.getElementById(`${SQUARES[element.currentRow][element.currentColumn[0]].id}`).lastChild.src = `../img/${element.color_1.substr(0,2)}_dot.png`;
+        }
+      } else if(element.position === 'vertical' && (SQUARES[element.currentRow[0]][element.currentColumn].isOccupied || SQUARES[element.currentRow[1]][element.currentColumn].isOccupied)){
+        if(!SQUARES[element.currentRow[0]][element.currentColumn].color){
+          document.getElementById(`${SQUARES[element.currentRow[1]][element.currentColumn].id}`).lastChild.src = `../img/${element.color_2.substr(0,2)}_dot.png`;
+        } else if(!SQUARES[element.currentRow[1]][element.currentColumn].color){
+          document.getElementById(`${SQUARES[element.currentRow[0]][element.currentColumn].id}`).lastChild.src = `../img/${element.color_1.substr(0,2)}_dot.png`;
+        }
+      }
+    })
+    setTimeout(() => {
+      SQUARES.forEach(a => {
+        a.forEach(b => {
+          if(!b.isOccupied) document.getElementById(`${b.id}`).innerHTML = ''
+        })
+      })
+    }, 100)
+    sortPills()
+    PILLS.forEach(element => element.reactivatePill())
     if(BUGS.length === 0){
       clearInterval(interval)
-      alert('koniec, nie ma juz robaków na planszy')
+      PILLS.forEach(element => element.reactivatePill())
+      document.getElementById('alert').style.display = 'inline'
+      document.getElementById('alert').setAttribute('src', './img/sc.png');
+      if(score > topScore) localStorage.setItem('topScore', score);
     }
   };
   reactivatePill = () => {
-    if(this.position === 'horizontal' && !SQUARES[this.currentRow][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow][this.currentColumn[1]].isOccupied){
-      this.state = 'falling';
-      this.fallDown()
-    } else if(this.position === 'vertical' && !SQUARES[this.currentRow[0]][this.currentColumn].isOccupied){
-      this.state = 'falling';
-      this.fallDown()
+    if(this.state !== 'falling'){
+      if(this.position === 'vertical'){
+        if(SQUARES[this.currentRow[0]][this.currentColumn].color && SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity !== 'bug' && SQUARES[this.currentRow[1]][this.currentColumn].color){
+          if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+            this.canMove = false
+            this.state = 'falling'
+            const reactivatedInterval = setInterval(() => {
+              if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+                this.colorizeVerticalPill('fallDown', false, true, SQUARES)
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+              } else {
+                clearInterval(reactivatedInterval)
+                this.state = 'static'
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+                this.canMove = true
+              }
+            }, 100)
+          }
+        } else if(SQUARES[this.currentRow[0]][this.currentColumn].color && !SQUARES[this.currentRow[1]][this.currentColumn].color){
+          if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+            this.canMove = false
+            this.state = 'falling'
+            const reactivatedInterval = setInterval(() => {
+              if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+                this.colorizeVerticalPill('fallDown', true, true, SQUARES)
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+              } else {
+                clearInterval(reactivatedInterval)
+                this.state = 'static'
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+                this.canMove = true
+              }
+            }, 100)
+          }
+        } else if(!SQUARES[this.currentRow[0]][this.currentColumn].color && SQUARES[this.currentRow[1]][this.currentColumn].color){
+          if(!SQUARES[this.currentRow[1]+1][this.currentColumn].isOccupied){
+            this.canMove = false
+            this.state = 'falling'
+            const reactivatedInterval = setInterval(() => {
+              if(!SQUARES[this.currentRow[1]+1][this.currentColumn].isOccupied){
+                this.colorizeVerticalPill('fallDown', true, true, SQUARES)
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+              } else {
+                clearInterval(reactivatedInterval)
+                this.state = 'static'
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+                this.canMove = true
+              }
+            }, 100)
+          }
+        }
+      } else if(this.position === 'horizontal'){
+        if(SQUARES[this.currentRow][this.currentColumn[0]].color && SQUARES[this.currentRow][this.currentColumn[1]].color && SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity !== 'bug' && SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity !== 'bug'){
+          if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+            this.canMove = false
+            this.state = 'falling'
+            const reactivatedInterval = setInterval(() => {
+              if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+                this.colorizeHorizontalPill('fallDown', false, true, SQUARES)
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+              } else {
+                clearInterval(reactivatedInterval)
+                this.state = 'static'
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+                this.canMove = true
+              }
+            }, 100)
+          }
+        } else if(SQUARES[this.currentRow][this.currentColumn[0]].color && !SQUARES[this.currentRow][this.currentColumn[1]].color && SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity !== 'bug'){
+          if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied){
+            this.canMove = false
+            this.state = 'falling'
+            const reactivatedInterval = setInterval(() => {
+              if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied){
+                this.colorizeHorizontalPill('fallDown', true, true, SQUARES)
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+              } else {
+                clearInterval(reactivatedInterval)
+                this.state = 'static'
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+                this.canMove = true
+              }
+            }, 100)
+          }
+        } else if(!SQUARES[this.currentRow][this.currentColumn[0]].color && SQUARES[this.currentRow][this.currentColumn[1]].color && SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity !== 'bug'){
+          if(!SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+            this.canMove = false
+            this.state = 'falling'
+            const reactivatedInterval = setInterval(() => {
+              if(!SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+                this.colorizeHorizontalPill('fallDown', true, true, SQUARES)
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+              } else {
+                clearInterval(reactivatedInterval)
+                this.state = 'static'
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
+                this.canMove = true
+              }
+            }, 100)
+          }
+        }
+      }
     }
   };
 }
@@ -326,7 +649,9 @@ class Bug {
     SQUARES[ROW][COLUMN].isOccupied = true
     SQUARES[ROW][COLUMN].typeOfEntity = 'bug'
     SQUARES[ROW][COLUMN].color = this.color
-    document.getElementById(`${SQUARES[ROW][COLUMN].id}`).style.backgroundColor = `${this.color}`
+    const virus = document.createElement('img')
+    virus.src = `../img/covid_${this.color}.png`;
+    document.getElementById(`${SQUARES[ROW][COLUMN].id}`).appendChild(virus)
   }
 }
 
@@ -337,17 +662,19 @@ const drawRandomSquare = () => {
   return [ROW, COLUMN]
 }
 
+//
 const compareColors = (row, column, index, pattern, direction, multiColor, level, color, position) => {
-  let tempArr = []
-  let kupa = row
-  let dupa = column
+  let dataToReturn = []
+  let originalRow = row
+  let originalColumn = column
   if(position === 'vertical'){
     while(SQUARES[row[index]][column].isOccupied && SQUARES[row[index]][column].typeOfEntity !== null){
       if(color === SQUARES[row[index]][column].color){
-        tempArr.push({
+        dataToReturn.push({
           id: SQUARES[row[index]][column].id,
           row: row[index],
           column: column,
+          color: color
         });
       } else if(color !== SQUARES[row[index]][column].color) break;
       switch(direction){
@@ -366,32 +693,33 @@ const compareColors = (row, column, index, pattern, direction, multiColor, level
       }
     };
     if(multiColor && direction === 'down'){
-        if(tempArr.length >= 4) return [...tempArr]
+        if(dataToReturn.length >= 4) return [...dataToReturn]
         else return []
     } else if(multiColor && direction === 'up' && level === 0){
-        if(tempArr.length >= 4) return [...tempArr]
+        if(dataToReturn.length >= 4) return [...dataToReturn]
         else return []
     } else if(direction === 'left' && level === 0){
-        tempArr.push(...compareColors([...pattern], dupa, index, [...pattern], 'right', true, 1, color, 'vertical'))
-        tempArr.sort((a, b) => a.id - b.id)
-        tempArr.forEach((element, index) => {
-          if(tempArr[index+1])
-            if(element.id === tempArr[index+1].id) tempArr.splice(index+1, 1)
+        dataToReturn.push(...compareColors([...pattern], originalColumn, index, [...pattern], 'right', true, 1, color, 'vertical'))
+        dataToReturn.sort((a, b) => a.id - b.id)
+        dataToReturn.forEach((element, index) => {
+          if(dataToReturn[index+1])
+            if(element.id === dataToReturn[index+1].id) dataToReturn.splice(index+1, 1)
         })
-        if(tempArr.length >= 4) return [...tempArr]
+        if(dataToReturn.length >= 4) return [...dataToReturn]
         else return []
     } else if(!multiColor && direction === 'down'){
-        tempArr.push(...compareColors([...pattern], dupa, 1, [...pattern], 'up', false, 0, color, 'vertical'))
-        if(tempArr.length >= 4) return[...tempArr.sort((a, b) => a.id - b.id)]
+        dataToReturn.push(...compareColors([...pattern], originalColumn, 1, [...pattern], 'up', false, 0, color, 'vertical'))
+        if(dataToReturn.length >= 4) return[...dataToReturn.sort((a, b) => a.id - b.id)]
         else return []
     }
   } else if(position === 'horizontal'){
       while(SQUARES[row][column[index]].isOccupied && SQUARES[row][column[index]].typeOfEntity !== null){
         if(color === SQUARES[row][column[index]].color){
-          tempArr.push({
+          dataToReturn.push({
             id: SQUARES[row][column[index]].id,
             row: row,
             column: column[index],
+            color: color
           });
         } else if(color !== SQUARES[row][column[index]].color) break;
         switch(direction){
@@ -410,27 +738,47 @@ const compareColors = (row, column, index, pattern, direction, multiColor, level
         }
       };
       if(multiColor && direction ==='left'){
-          if(tempArr.length >= 4) return [...tempArr.sort((a,b) => a.id - b.id)]
+          if(dataToReturn.length >= 4) return [...dataToReturn.sort((a,b) => a.id - b.id)]
           else return []
       } else if(multiColor && direction === 'right'){
-          if(tempArr.length >= 4) return [...tempArr]
+          if(dataToReturn.length >= 4) return [...dataToReturn]
           else return []
       } else if(direction === 'down'){
-          tempArr.push(...compareColors(kupa, [...column], index, kupa, 'up', true, 0, color, 'horizontal'))
-          tempArr.sort((a, b) => a.id - b.id)
-          tempArr.forEach((element, index) => {
-            if(tempArr[index+1])
-              if(element.id === tempArr[index+1].id) tempArr.splice(index+1, 1)
+          dataToReturn.push(...compareColors(originalRow, [...column], index, originalRow, 'up', true, 0, color, 'horizontal'))
+          dataToReturn.sort((a, b) => a.id - b.id)
+          dataToReturn.forEach((element, index) => {
+            if(dataToReturn[index+1])
+              if(element.id === dataToReturn[index+1].id) dataToReturn.splice(index+1, 1)
           })
-          if(tempArr.length >= 4) return [...tempArr]
+          if(dataToReturn.length >= 4) return [...dataToReturn]
           else return []
       } else if(!multiColor && direction === 'left'){
-          tempArr.push(...compareColors(kupa, [...dupa], 1, kupa, 'right', false, 0, color, 'horizontal'))
-          if(tempArr.length >= 4) return [...tempArr.sort((a,b) => a.id - b.id)]
+          dataToReturn.push(...compareColors(originalRow, [...originalColumn], 1, originalRow, 'right', false, 0, color, 'horizontal'))
+          if(dataToReturn.length >= 4) return [...dataToReturn.sort((a,b) => a.id - b.id)]
           else return []
       }
   }
-  return [...tempArr]
+  return [...dataToReturn]
 }
 
-export { Square, Bug, Pill };
+//
+const sortPills = () => {
+  PILLS.sort((a,b) => {
+    let row_1 = undefined
+    let row_2 = undefined
+    let column_1 = undefined
+    let column_2 = undefined
+    a.position === 'horizontal' ? row_1 = a.currentRow : row_1 = a.currentRow[0]
+    b.position === 'horizontal' ? row_2 = b.currentRow : row_2 = b.currentRow[0]
+    a.position === 'horizontal' ? column_1 = a.currentColumn[0] : column_1 = a.currentColumn
+    b.position === 'horizontal' ? column_2 = b.currentColumn[0] : column_2 = b.currentColumn
+    if(row_1 > row_2) return -1
+    else if(row_1 < row_2) return 1
+    else {
+      if(column_1 > column_2) return -1
+      else if(column_1 < column_2) return 1
+    }
+  })
+}
+
+export { Square, Bug, Pill, score, throwingPill };
