@@ -491,7 +491,7 @@ class Pill {
         })
       }
       const child = document.getElementById(`${element.id}`).lastChild;
-      if(child) child.src.split('/')[7].split('_')[0] === 'covid' ? child.src = `../img/${child.src.split('/')[7].split('_')[1].substr(0,2)}_x.png` : child.src = `../img/${child.src.split('/')[7].split('_')[0]}_o.png`;
+      if(child) child.src.split('/')[7].split('_')[0] === 'covid' ? child.src = `https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/${child.src.split('/')[7].split('_')[1].substr(0,2)}_x.png` : child.src = `../img/${child.src.split('/')[7].split('_')[0]}_o.png`;
       SQUARES[element.row][element.column].isOccupied = false;
       SQUARES[element.row][element.column].typeOfEntity = null;
       SQUARES[element.row][element.column].color = undefined;
@@ -514,7 +514,7 @@ class Pill {
         })
       }
       const child = document.getElementById(`${element.id}`).lastChild;
-      if(child) child.src.split('/')[7].split('_')[0] === 'covid' ? child.src = `../img/${child.src.split('/')[7].split('_')[1].substr(0,2)}_x.png` : child.src = `../img/${child.src.split('/')[7].split('_')[0]}_o.png`;
+      if(child) child.src.split('/')[7].split('_')[0] === 'covid' ? child.src = `https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/${child.src.split('/')[7].split('_')[1].substr(0,2)}_x.png` : child.src = `../img/${child.src.split('/')[7].split('_')[0]}_o.png`;
       SQUARES[element.row][element.column].isOccupied = false;
       SQUARES[element.row][element.column].typeOfEntity = null;
       SQUARES[element.row][element.column].color = undefined;
