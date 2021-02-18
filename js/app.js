@@ -72,8 +72,8 @@ function updateVirusesCount() {
   VIRUSES.innerText = '';
   const img_1 = document.createElement('img');
   const img_2 = document.createElement('img');
-  img_1.src = '../img/cyfry/0.png';
-  img_2.src = `../img/cyfry/${BUGS.length}.png`;
+  img_1.src = 'https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/cyfry/0.png';
+  img_2.src = `https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/cyfry/${BUGS.length}.png`;
   img_1.classList.add('digit');
   img_2.classList.add('digit');
   VIRUSES.appendChild(img_1);
@@ -87,9 +87,9 @@ function virusMagnifier(){
   let increase = true;
   let count_2 = 1
   const virus_magnifier_interval = setInterval(() => {
-    BROWN_VIRUS.src = `../img/lupa/br/${count}.png`
-    YELLOW_VIRUS.src = `../img/lupa/yl/${count}.png`
-    BLUE_VIRUS.src = `../img/lupa/bl/${count}.png`
+    BROWN_VIRUS.src = `https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/lupa/br/${count}.png`
+    YELLOW_VIRUS.src = `https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/lupa/yl/${count}.png`
+    BLUE_VIRUS.src = `https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/lupa/bl/${count}.png`
     if(increase) count++
     else if(!increase) count--;
     if(increase && count === 4){
@@ -277,8 +277,8 @@ if (!topScore) {
 function updateTopScore() {
   for (let i = 0; i < 7; i++) {
     const score_img = document.createElement('img');
-    if (i === 4) score_img.src = `../img/cyfry/${topScore / 100}.png`;
-    else score_img.src = '../img/cyfry/0.png';
+    if (i === 4) score_img.src = `https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/cyfry/${topScore / 100}.png`;
+    else score_img.src = 'https://raw.githubusercontent.com/mareczek2115/dr-mario/main/img/cyfry/0.png';
     score_img.classList.add('digit');
     TOP_SCORE.appendChild(score_img);
   }
