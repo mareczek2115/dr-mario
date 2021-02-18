@@ -30,6 +30,7 @@ class Square {
     this.color = color
     this.pillId = undefined
     this.className = className
+    this.state = undefined
   }
   generateSquare = MAIN_BOARD => {
     const SQUARE = document.createElement('div');
@@ -120,13 +121,22 @@ class Pill {
   };
   fallDown = () => {
       this.interval = setInterval(() => {
-        if(this.position === 'horizontal' && !SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied)
+        if(this.position === 'horizontal' && !SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
           this.colorizeHorizontalPill('fallDown', false, true, SQUARES);
-        else if(this.position === 'vertical' && !SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied)
+        }
+        else if(this.position === 'vertical' && !SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
           this.colorizeVerticalPill('fallDown', false, true, SQUARES);
+        }
         else{
           clearInterval(this.interval);
           this.state = 'static';
+          if(this.position === 'horizontal'){
+            SQUARES[this.currentRow][this.currentColumn[0]].state = 'static'
+            SQUARES[this.currentRow][this.currentColumn[1]].state = 'static'
+          } else{
+            SQUARES[this.currentRow[0]][this.currentColumn].state = 'static'
+            SQUARES[this.currentRow[1]][this.currentColumn].state = 'static'
+          }
           this.checkIfCanRemove()
         }
       }, 800)
@@ -219,16 +229,20 @@ class Pill {
             this.colorizeHorizontalPill('moveLeft', false, true, SQUARES);
           else if((code === 'ArrowRight' || code === 'KeyD') && !SQUARES[this.currentRow][this.currentColumn[1]+1].isOccupied && this.canMove)
             this.colorizeHorizontalPill('moveRight', false, true, SQUARES);
-          else if((code === 'ArrowDown' || code === 'KeyS') && !SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+          else if((code === 'ArrowDown' || code === 'KeyS') && this.currentRow !== 16 && SQUARES[this.currentRow+1][this.currentColumn[0]].state !== 'static' && SQUARES[this.currentRow+1][this.currentColumn[1]].state !== 'static'){
             this.canMove = false;
             clearInterval(this.interval);
             this.interval = setInterval(() => {
-              if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied) this.colorizeHorizontalPill('fallDown', false, true, SQUARES);
-              else {
-                clearInterval(this.interval)
-                this.checkIfCanRemove()
-                this.state = 'static'
-                this.canMove = true
+              if(this.currentRow !== 16 && SQUARES[this.currentRow+1][this.currentColumn[0]].state !== 'static' && SQUARES[this.currentRow+1][this.currentColumn[1]].state !== 'static'){
+                this.colorizeHorizontalPill('fallDown', false, true, SQUARES);
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove();
+              } else {
+                clearInterval(this.interval);
+                this.state = 'static';
+                SQUARES[this.currentRow][this.currentColumn[0]].state = 'static';
+                SQUARES[this.currentRow][this.currentColumn[1]].state = 'static';
+                PILLS.forEach(element => element.reactivatePill());
+                this.checkIfCanRemove();
               }
             }, 50)
           }
@@ -237,16 +251,20 @@ class Pill {
             this.colorizeVerticalPill('moveLeft', false, true, SQUARES);
           if((code === 'ArrowRight' || code === 'KeyD') && !SQUARES[this.currentRow[0]][this.currentColumn+1].isOccupied && !SQUARES[this.currentRow[1]][this.currentColumn+1].isOccupied && this.canMove){
             this.colorizeVerticalPill('moveRight', false, true, SQUARES);
-          } else if((code === 'ArrowDown' || code === 'KeyS') && !SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+          } else if((code === 'ArrowDown' || code === 'KeyS') && this.currentRow[0] !== 16 && SQUARES[this.currentRow[0]+1][this.currentColumn].state !== 'static'){
             this.canMove = false;
             clearInterval(this.interval);
             this.interval = setInterval(() => {
-              if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied) this.colorizeVerticalPill('fallDown', false, true, SQUARES);
-              else {
-                clearInterval(this.interval)
-                this.checkIfCanRemove()
-                this.state = 'static'
-                this.canMove = true
+              if(this.currentRow[0] !== 16 && SQUARES[this.currentRow[0]+1][this.currentColumn].state !== 'static'){
+                this.colorizeVerticalPill('fallDown', false, true, SQUARES);
+                if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove();
+              } else {
+                clearInterval(this.interval);
+                this.state = 'static';
+                SQUARES[this.currentRow[0]][this.currentColumn].state = 'static';
+                SQUARES[this.currentRow[1]][this.currentColumn].state = 'static';
+                PILLS.forEach(element => element.reactivatePill());
+                this.checkIfCanRemove();
               }
             }, 50)
           }
@@ -266,6 +284,7 @@ class Pill {
         SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity = null;
         SQUARES[this.currentRow][this.currentColumn[0]].color = undefined;
         SQUARES[this.currentRow][this.currentColumn[0]].pillId = undefined;
+        SQUARES[this.currentRow][this.currentColumn[0]].state = undefined;
         const img = document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).lastChild
         if(img) document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).removeChild(img);
       }
@@ -274,6 +293,7 @@ class Pill {
         SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = null;
         SQUARES[this.currentRow][this.currentColumn[1]].color = undefined;
         SQUARES[this.currentRow][this.currentColumn[1]].pillId = undefined;
+        SQUARES[this.currentRow][this.currentColumn[1]].state = undefined;
         const img = document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).lastChild;
         if(img) document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).removeChild(img);
       }
@@ -285,6 +305,7 @@ class Pill {
       SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = 'pill';
       SQUARES[this.currentRow][this.currentColumn[1]].color = this.color_2;
       SQUARES[this.currentRow][this.currentColumn[1]].pillId = this.id;
+      SQUARES[this.currentRow][this.currentColumn[1]].state = 'falling';
       const img = document.createElement('img')
       img.src = `../img/${this.color_2.substr(0,2)}_dot.png`;
       document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[1]].id}`).appendChild(img)
@@ -293,6 +314,7 @@ class Pill {
       SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity = 'pill';
       SQUARES[this.currentRow][this.currentColumn[0]].color = this.color_1;
       SQUARES[this.currentRow][this.currentColumn[0]].pillId = this.id;
+      SQUARES[this.currentRow][this.currentColumn[0]].state = 'falling';
       const img = document.createElement('img')
       img.src = `../img/${this.color_1.substr(0,2)}_dot.png`;
       document.getElementById(`${SQUARES[this.currentRow][this.currentColumn[0]].id}`).appendChild(img)
@@ -301,10 +323,12 @@ class Pill {
       SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity = 'pill';
       SQUARES[this.currentRow][this.currentColumn[0]].color = this.color_1;
       SQUARES[this.currentRow][this.currentColumn[0]].pillId = this.id;
+      SQUARES[this.currentRow][this.currentColumn[0]].state = 'falling';
       SQUARES[this.currentRow][this.currentColumn[1]].isOccupied = true;
       SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity = 'pill';
       SQUARES[this.currentRow][this.currentColumn[1]].color = this.color_2;
       SQUARES[this.currentRow][this.currentColumn[1]].pillId = this.id;
+      SQUARES[this.currentRow][this.currentColumn[1]].state = 'falling';
       const img_1 = document.createElement('img')
       const img_2 = document.createElement('img')
       img_1.src = `../img/${this.color_1.substr(0,2)}_left.png`;
@@ -325,12 +349,14 @@ class Pill {
       SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity = null;
       SQUARES[this.currentRow[0]][this.currentColumn].color = undefined;
       SQUARES[this.currentRow[0]][this.currentColumn].pillId = undefined;
+      SQUARES[this.currentRow[0]][this.currentColumn].state = undefined;
       document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).removeChild(document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).lastChild);
     }
     SQUARES[this.currentRow[1]][this.currentColumn].isOccupied = false;
     SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = null;
     SQUARES[this.currentRow[1]][this.currentColumn].color = undefined;
     SQUARES[this.currentRow[1]][this.currentColumn].pillId = undefined;
+    SQUARES[this.currentRow[1]][this.currentColumn].state = undefined;
     const img = document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).lastChild
     if(img) document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).removeChild(img);
     if(useChangeSquaresInside) this.changeSquares(source, 'vertical');
@@ -339,6 +365,7 @@ class Pill {
       SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = 'pill';
       SQUARES[this.currentRow[1]][this.currentColumn].color = this.color_2;
       SQUARES[this.currentRow[1]][this.currentColumn].pillId = this.id;
+      SQUARES[this.currentRow[1]][this.currentColumn].state = 'falling';
       const img = document.createElement('img');
       img.src = `../img/${this.color_2.substr(0,2)}_dot.png`;
       document.getElementById(`${SQUARES[this.currentRow[1]][this.currentColumn].id}`).appendChild(img);
@@ -347,6 +374,7 @@ class Pill {
       SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity = 'pill';
       SQUARES[this.currentRow[0]][this.currentColumn].color = this.color_1;
       SQUARES[this.currentRow[0]][this.currentColumn].pillId = this.id;
+      SQUARES[this.currentRow[0]][this.currentColumn].state = 'falling';
       const img = document.createElement('img');
       img.src = `../img/${this.color_1.substr(0,2)}_dot.png`;
       document.getElementById(`${SQUARES[this.currentRow[0]][this.currentColumn].id}`).appendChild(img);
@@ -355,10 +383,12 @@ class Pill {
       SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity = 'pill';
       SQUARES[this.currentRow[0]][this.currentColumn].color = this.color_1;
       SQUARES[this.currentRow[0]][this.currentColumn].pillId = this.id;
+      SQUARES[this.currentRow[0]][this.currentColumn].state = 'falling';
       SQUARES[this.currentRow[1]][this.currentColumn].isOccupied = true;
       SQUARES[this.currentRow[1]][this.currentColumn].typeOfEntity = 'pill';
       SQUARES[this.currentRow[1]][this.currentColumn].color = this.color_2;
       SQUARES[this.currentRow[1]][this.currentColumn].pillId = this.id;
+      SQUARES[this.currentRow[1]][this.currentColumn].state = 'falling';
       const img_1 = document.createElement('img');
       const img_2 = document.createElement('img');
       img_1.src = `../img/${this.color_1.substr(0,2)}_down.png`;
@@ -466,6 +496,7 @@ class Pill {
       SQUARES[element.row][element.column].typeOfEntity = null;
       SQUARES[element.row][element.column].color = undefined;
       SQUARES[element.row][element.column].pillId = undefined;
+      SQUARES[element.row][element.column].state = undefined;
     })
     idOfSquaresToClear.vertically.forEach(element => {
       if(SQUARES[element.row][element.column].typeOfEntity === 'bug'){
@@ -488,6 +519,7 @@ class Pill {
       SQUARES[element.row][element.column].typeOfEntity = null;
       SQUARES[element.row][element.column].color = undefined;
       SQUARES[element.row][element.column].pillId = undefined;
+      SQUARES[element.row][element.column].state = undefined;
     });
     PILLS.forEach((element, index) => {
       if(element.position === 'horizontal'){
@@ -532,48 +564,56 @@ class Pill {
     if(this.state !== 'falling'){
       if(this.position === 'vertical'){
         if(SQUARES[this.currentRow[0]][this.currentColumn].color && SQUARES[this.currentRow[0]][this.currentColumn].typeOfEntity !== 'bug' && SQUARES[this.currentRow[1]][this.currentColumn].color){
-          if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+          if(this.currentRow[0] !== 16 && SQUARES[this.currentRow[0]+1][this.currentColumn].state !== 'static'){
+            SQUARES[this.currentRow[0]][this.currentColumn].state = 'falling'
+            SQUARES[this.currentRow[1]][this.currentColumn].state = 'falling'
             this.canMove = false
             this.state = 'falling'
             const reactivatedInterval = setInterval(() => {
-              if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+              if(this.currentRow[0] !== 16 && SQUARES[this.currentRow[0]+1][this.currentColumn].state !== 'static'){
                 this.colorizeVerticalPill('fallDown', false, true, SQUARES)
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
               } else {
                 clearInterval(reactivatedInterval)
                 this.state = 'static'
+                SQUARES[this.currentRow[0]][this.currentColumn].state = 'static'
+                SQUARES[this.currentRow[1]][this.currentColumn].state = 'static'
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
                 this.canMove = true
               }
             }, 100)
           }
         } else if(SQUARES[this.currentRow[0]][this.currentColumn].color && !SQUARES[this.currentRow[1]][this.currentColumn].color){
-          if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+          if(this.currentRow[0] !== 16 && SQUARES[this.currentRow[0]+1][this.currentColumn].state !== 'falling'){
+            SQUARES[this.currentRow[0]][this.currentColumn].state = 'falling'
             this.canMove = false
             this.state = 'falling'
             const reactivatedInterval = setInterval(() => {
-              if(!SQUARES[this.currentRow[0]+1][this.currentColumn].isOccupied){
+              if(this.currentColumn[0] !== 16 && SQUARES[this.currentRow[0]+1][this.currentColumn].state !== 'falling'){
                 this.colorizeVerticalPill('fallDown', true, true, SQUARES)
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
               } else {
                 clearInterval(reactivatedInterval)
                 this.state = 'static'
+                SQUARES[this.currentRow[0]][this.currentColumn].state = 'static'
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
                 this.canMove = true
               }
             }, 100)
           }
         } else if(!SQUARES[this.currentRow[0]][this.currentColumn].color && SQUARES[this.currentRow[1]][this.currentColumn].color){
-          if(!SQUARES[this.currentRow[1]+1][this.currentColumn].isOccupied){
+          if(this.currentRow[1] !== 16 && SQUARES[this.currentRow[1]+1][this.currentColumn].state !== 'static'){
+            SQUARES[this.currentRow[1]][this.currentColumn].state = 'falling'
             this.canMove = false
             this.state = 'falling'
             const reactivatedInterval = setInterval(() => {
-              if(!SQUARES[this.currentRow[1]+1][this.currentColumn].isOccupied){
+              if(this.currentRow[1] !== 16 && SQUARES[this.currentRow[1]+1][this.currentColumn].state !== 'static'){
                 this.colorizeVerticalPill('fallDown', true, true, SQUARES)
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
               } else {
                 clearInterval(reactivatedInterval)
                 this.state = 'static'
+                SQUARES[this.currentRow[1]][this.currentColumn].state = 'static'
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
                 this.canMove = true
               }
@@ -582,48 +622,56 @@ class Pill {
         }
       } else if(this.position === 'horizontal'){
         if(SQUARES[this.currentRow][this.currentColumn[0]].color && SQUARES[this.currentRow][this.currentColumn[1]].color && SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity !== 'bug' && SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity !== 'bug'){
-          if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+          if(this.currentRow !== 16 && SQUARES[this.currentRow+1][this.currentColumn[0]].state !== 'static' && SQUARES[this.currentRow+1][this.currentColumn[1]].state !== 'static'){
+            SQUARES[this.currentRow][this.currentColumn[0]].state = 'falling'
+            SQUARES[this.currentRow][this.currentColumn[1]].state = 'falling'
             this.canMove = false
             this.state = 'falling'
             const reactivatedInterval = setInterval(() => {
-              if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied && !SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+              if(this.currentRow !== 16 && SQUARES[this.currentRow+1][this.currentColumn[0]].state !== 'static' && SQUARES[this.currentRow+1][this.currentColumn[1]].state !== 'static'){
                 this.colorizeHorizontalPill('fallDown', false, true, SQUARES)
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
               } else {
                 clearInterval(reactivatedInterval)
                 this.state = 'static'
+                SQUARES[this.currentRow][this.currentColumn[0]].state = 'static'
+                SQUARES[this.currentRow][this.currentColumn[1]].state = 'static'
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
                 this.canMove = true
               }
             }, 100)
           }
         } else if(SQUARES[this.currentRow][this.currentColumn[0]].color && !SQUARES[this.currentRow][this.currentColumn[1]].color && SQUARES[this.currentRow][this.currentColumn[1]].typeOfEntity !== 'bug'){
-          if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied){
+          if(this.currentRow !== 16 && SQUARES[this.currentRow+1][this.currentColumn[0]].state !== 'static'){
+            SQUARES[this.currentRow][this.currentColumn[0]].state = 'falling'
             this.canMove = false
             this.state = 'falling'
             const reactivatedInterval = setInterval(() => {
-              if(!SQUARES[this.currentRow+1][this.currentColumn[0]].isOccupied){
+              if(this.currentRow !== 16 && SQUARES[this.currentRow+1][this.currentColumn[0]].state !== 'static'){
                 this.colorizeHorizontalPill('fallDown', true, true, SQUARES)
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
               } else {
                 clearInterval(reactivatedInterval)
                 this.state = 'static'
+                SQUARES[this.currentRow][this.currentColumn[0]].state = 'static'
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
                 this.canMove = true
               }
             }, 100)
           }
         } else if(!SQUARES[this.currentRow][this.currentColumn[0]].color && SQUARES[this.currentRow][this.currentColumn[1]].color && SQUARES[this.currentRow][this.currentColumn[0]].typeOfEntity !== 'bug'){
-          if(!SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+          if(this.currentRow !== 16 && SQUARES[this.currentRow+1][this.currentColumn[1]].state !== 'static'){
+            SQUARES[this.currentRow][this.currentColumn[1]].state = 'falling'
             this.canMove = false
             this.state = 'falling'
             const reactivatedInterval = setInterval(() => {
-              if(!SQUARES[this.currentRow+1][this.currentColumn[1]].isOccupied){
+              if(this.currentRow !== 16 && SQUARES[this.currentRow+1][this.currentColumn[1]].state !== 'static'){
                 this.colorizeHorizontalPill('fallDown', true, true, SQUARES)
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
               } else {
                 clearInterval(reactivatedInterval)
                 this.state = 'static'
+                SQUARES[this.currentRow][this.currentColumn[1]].state = 'static'
                 if(PILLS.every(element => element.state === 'static')) this.checkIfCanRemove()
                 this.canMove = true
               }
@@ -649,6 +697,7 @@ class Bug {
     SQUARES[ROW][COLUMN].isOccupied = true
     SQUARES[ROW][COLUMN].typeOfEntity = 'bug'
     SQUARES[ROW][COLUMN].color = this.color
+    SQUARES[ROW][COLUMN].state = 'static'
     const virus = document.createElement('img')
     virus.src = `../img/covid_${this.color}.png`;
     document.getElementById(`${SQUARES[ROW][COLUMN].id}`).appendChild(virus)
